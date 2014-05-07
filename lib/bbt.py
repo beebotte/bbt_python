@@ -20,6 +20,21 @@ __bulkWriteEndpoint__  = "/api/resource/bulk_write"
 __eventEndpoint__      = "/api/event/write"
 
 class BBT:
+  akey     = None
+  skey     = None
+  hostname = None
+  port     = None
+  ssl      = None
+  
+  """
+  Creates and maintains an object holding user credentials and connection parameters to be used as needed. 
+
+  @param akey: The user's API key (access key) to be passed along the authentication parameters.
+  @param skey: The user's secret key to be used to sign API calls.
+  @param hostname: The host name where the API is implemented.
+  @param port: The port number.
+  @param ssl: Indicates if SSL (TLS) should be used.
+  """
   def __init__(self, akey, skey, hostname = "api.beebotte.com", port = "80", ssl = False):
     self.akey     = akey
     self.skey     = skey
@@ -27,22 +42,49 @@ class BBT:
     self.port     = port
     self.ssl      = ssl
 
+  """
+  Utility function that signs the given string with the secret key using SHA1 HMAC and returns a string containing
+  the access key followed by column followed by the hash in base64. 
+
+  @param stringToSign: The string data to sign.
+
+  @return: returns a string containing the access key followed by column followed by the SHA1 HMAC of the string to sign using the secret key encoded in base64. 
+    This signature format is used to authenticate API calls
+  """
   def sign(self, stringToSign):
     signature = hmac.new(str.encode(self.skey), str.encode(stringToSign), hashlib.sha1)
     return "%s:%s" % (self.akey, bytes.decode(base64.b64encode(signature.digest())))
 
+  """
+  Creates a signature of an API call to authenticate the user and verify message integrity.
+
+  @param verb: The HTTP verb (method) in upper case.
+  @param uri: the API endpoint containing the query parameters.
+  @param date: The date on the caller side.
+  @param c_type: The Content type header, should be application/json.
+  @param c_md5: The content MD5 hash of the data to send (should be set for POST requests)
+
+  @return: returns the signature of the API call to be added as authorization header in the request to send.
+  """
   def __signRequest__(self, verb, uri, date, c_type, c_md5 = ""):
     stringToSign = "%s\n%s\n%s\n%s\n%s" % (verb, c_md5, c_type, date, uri)
     return self.sign(stringToSign)
 
+  """
+  Checks if the given response data is OK or if an error occurred
+  
+  @param response: The response containing the response status and data
+  
+  @return: The response data in JSON if the status is OK, raises an exception otherwise (with the status code and error code)
+  """
   def __processResponse__(self, response):
     code    = response['status']
-    body   = json.loads(response['body'])
+    data   = json.loads(response['data'])
     if code < 400:
-      return body
+      return data
     else:
-      errcode = body['error']['code']
-      errmsg  = body['error']['message']
+      errcode = data['error']['code']
+      errmsg  = data['error']['message']
       if code == 400:
         if errcode == 1101:
           raise AuthenticationError("Status: 400; Code 1101; Message: %s" % errmsg)
@@ -86,13 +128,22 @@ class BBT:
       else:
         raise UnexpectedError("Status: %s; Code %s; Message: %s" % (code, errcode, errmsg) )
 
-  def __postData__(self, uri, body, auth = True):
+  """
+  Sends a POST request with the given data to the given URI endpoint and returns the response data.
+  
+  @param uri: The uri endpoint.
+  @param data: the data to send.
+  @param auth: Indicates if the Post request should be authenticated (defaults to true).
+  
+  @return: The response data in JSON format if success, raises an error or failure.
+  """
+  def __postData__(self, uri, data, auth = True):
     if self.ssl:
       url = "%s://%s:%s%s" % ( 'https', self.hostname, self.port, uri )
     else:
       url = "%s://%s:%s%s" % ( 'http', self.hostname, self.port, uri )
 
-    md5 = bytes.decode( base64.b64encode( hashlib.md5( str.encode( body ) ).digest() ) )
+    md5 = bytes.decode( base64.b64encode( hashlib.md5( str.encode( data ) ).digest() ) )
     date = utils.formatdate()
     if auth:
       sig = self.__signRequest__('POST', uri, date, "application/json", md5)
@@ -100,9 +151,18 @@ class BBT:
     else:
       headers = { 'Content-MD5': md5, 'Content-Type': 'application/json', 'Date': date } 
 
-    r = requests.post( url, data=body, headers=headers )
-    return self.__processResponse__( { 'status': r.status_code, 'body': r.text } )
+    r = requests.post( url, data=data, headers=headers )
+    return self.__processResponse__( { 'status': r.status_code, 'data': r.text } )
 
+  """
+  Sends a GET request with the given query parameters to the given URI endpoint and returns the response data.
+  
+  @param uri: The uri endpoint.
+  @param query: the query parameters in JSON format.
+  @param auth: Indicates if the Post request should be authenticated (defaults to true).
+  
+  @return: The response data in JSON format if success, raises an error or failure.
+  """
   def __getData__(self, uri, query, auth = True):
     if self.ssl:
       url = "%s://%s:%s%s" % ( 'https', self.hostname, self.port, uri )
@@ -118,7 +178,7 @@ class BBT:
       headers = { 'Content-Type': 'application/json', 'Date': date } 
 
     r = requests.get( url, params=query, headers=headers )
-    return self.__processResponse__( { 'status': r.status_code, 'body': r.text } )
+    return self.__processResponse__( { 'status': r.status_code, 'data': r.text } )
 
   def publicRead(self, owner, device, service, resource, limit = 1, source = "live", metric = "avg" ):
     query = {'owner': owner, 'device': device, 'service': service, 'resource': resource, 'limit': limit, 'source': source, 'metric': metric}
