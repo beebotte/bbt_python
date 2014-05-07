@@ -222,6 +222,53 @@ class BBT:
     stringToSign = "%s:%s.%s.%s:ttl=%s:read=%s:write=%s" % ( sid, device, service, resource, ttl, r, w )
     return self.sign(stringToSign)
 
+class Resource:
+  device   = None
+  service  = None
+  resource = None
+  bbt      = None
+  
+  def __init__(self, bbt, device, service, resource):
+    self.device   = device
+    self.service  = service
+    self.resource = resource
+    self.bbt      = bbt
+  
+  def write(self, value, ts):
+    return self.bbt.write(self.device, self.service, self.resource, value)
+  
+  def event(self, value):
+    return self.bbt.write(self.device, self.service, self.resource, value)
+  
+  def read(self, limit = 1, source = "live", metric = "avg"):
+    return self.bbt.read(self.device, self.service, self.resource, limit, source, metric)
+  
+  def recentVal(self):
+    retval = self.bbt.read(self.device, self.service, self.resource)[0]
+    return DataPoint.fromJSON(retval)
+
+class DataPoint:
+  device   = None
+  service  = None
+  resource = None
+  value    = None
+  ts       = None
+  
+  def __init__(self, value, ts, device = None, service = None, resource = None):
+    self.device   = device
+    self.service  = service
+    self.resource = resource
+    self.value    = value
+    self.ts       = ts
+
+  @classmethod
+  def fromJSON(cls, params):
+    #return cls( params['device'], params['service'], params['resource'], params['value'], params['ts'] )
+    return cls( value = params['value'], ts = params['ts'] )
+
+  def toJSON(self, owner = None):
+    return {'owner': owner, 'device': self.device, 'service': self.service, 'resource': self.resource, 'value': self.value, 'ts': self.ts}
+
 class AuthenticationError(Exception):
     pass
 
