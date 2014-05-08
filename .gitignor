@@ -1,0 +1,7 @@
+*.pyc
+bin/
+include/
+lib/
+man/
+beebotte/config.py
+beebotte/private_test.py
