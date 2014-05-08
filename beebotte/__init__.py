@@ -237,6 +237,9 @@ class Resource:
   def write(self, value, ts):
     return self.bbt.write(self.device, self.service, self.resource, value)
   
+  def update(self, value, ts):
+    return self.bbt.write(self.device, self.service, self.resource, value)
+  
   def event(self, value):
     return self.bbt.write(self.device, self.service, self.resource, value)
   
