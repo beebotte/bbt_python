@@ -6,12 +6,14 @@ Contains methods for sending persistent and transient messages and for reading d
 __version__ = '0.1.0'
 
 import json
+import time
 import hmac
 import base64
 import hashlib
 import requests
-import urllib.parse
 from email import utils
+try: import urllib.parse as urllib
+except ImportError: import urllib
 
 __publicReadEndpoint__ = "/api/public/resource"
 __readEndpoint__       = "/api/resource/read"
@@ -25,9 +27,9 @@ class BBT:
   hostname = None
   port     = None
   ssl      = None
-  
+
   """
-  Creates and maintains an object holding user credentials and connection parameters to be used as needed. 
+  Creates and maintains an object holding user credentials and connection parameters to be used as needed.
 
   @param akey: The user's API key (access key) to be passed along the authentication parameters.
   @param skey: The user's secret key to be used to sign API calls.
@@ -44,15 +46,15 @@ class BBT:
 
   """
   Utility function that signs the given string with the secret key using SHA1 HMAC and returns a string containing
-  the access key followed by column followed by the hash in base64. 
+  the access key followed by column followed by the hash in base64.
 
   @param stringToSign: The string data to sign.
 
-  @return: returns a string containing the access key followed by column followed by the SHA1 HMAC of the string to sign using the secret key encoded in base64. 
+  @return: returns a string containing the access key followed by column followed by the SHA1 HMAC of the string to sign using the secret key encoded in base64.
     This signature format is used to authenticate API calls
   """
   def sign(self, stringToSign):
-    signature = hmac.new(str.encode(self.skey), str.encode(stringToSign), hashlib.sha1)
+    signature = hmac.new(self.skey.encode(), stringToSign.encode(), hashlib.sha1)
     return "%s:%s" % (self.akey, bytes.decode(base64.b64encode(signature.digest())))
 
   """
@@ -72,9 +74,9 @@ class BBT:
 
   """
   Checks if the given response data is OK or if an error occurred
-  
+
   @param response: The response containing the response status and data
-  
+
   @return: The response data in JSON if the status is OK, raises an exception otherwise (with the status code and error code)
   """
   def __processResponse__(self, response):
@@ -130,11 +132,11 @@ class BBT:
 
   """
   Sends a POST request with the given data to the given URI endpoint and returns the response data.
-  
+
   @param uri: The uri endpoint.
   @param data: the data to send.
   @param auth: Indicates if the Post request should be authenticated (defaults to true).
-  
+
   @return: The response data in JSON format if success, raises an error or failure.
   """
   def __postData__(self, uri, data, auth = True):
@@ -147,20 +149,20 @@ class BBT:
     date = utils.formatdate()
     if auth:
       sig = self.__signRequest__('POST', uri, date, "application/json", md5)
-      headers = { 'Content-MD5': md5, 'Content-Type': 'application/json', 'Date': date, 'Authorization': sig } 
+      headers = { 'Content-MD5': md5, 'Content-Type': 'application/json', 'Date': date, 'Authorization': sig }
     else:
-      headers = { 'Content-MD5': md5, 'Content-Type': 'application/json', 'Date': date } 
+      headers = { 'Content-MD5': md5, 'Content-Type': 'application/json', 'Date': date }
 
     r = requests.post( url, data=data, headers=headers )
     return self.__processResponse__( { 'status': r.status_code, 'data': r.text } )
 
   """
   Sends a GET request with the given query parameters to the given URI endpoint and returns the response data.
-  
+
   @param uri: The uri endpoint.
   @param query: the query parameters in JSON format.
   @param auth: Indicates if the Post request should be authenticated (defaults to true).
-  
+
   @return: The response data in JSON format if success, raises an error or failure.
   """
   def __getData__(self, uri, query, auth = True):
@@ -169,46 +171,57 @@ class BBT:
     else:
       url = "%s://%s:%s%s" % ( 'http', self.hostname, self.port, uri )
 
-    full_uri = "%s?%s" % ( uri, urllib.parse.urlencode( query ) )
+    full_uri = "%s?%s" % ( uri, urllib.urlencode( query ) )
     date = utils.formatdate()
     if auth:
       sig = self.__signRequest__('GET', full_uri, date, "application/json")
-      headers = { 'Content-Type': 'application/json', 'Date': date, 'Authorization': sig } 
+      headers = { 'Content-Type': 'application/json', 'Date': date, 'Authorization': sig }
     else:
-      headers = { 'Content-Type': 'application/json', 'Date': date } 
+      headers = { 'Content-Type': 'application/json', 'Date': date }
 
     r = requests.get( url, params=query, headers=headers )
     return self.__processResponse__( { 'status': r.status_code, 'data': r.text } )
 
   def publicRead(self, owner, device, service, resource, limit = 1, source = "live", metric = "avg" ):
     query = {'owner': owner, 'device': device, 'service': service, 'resource': resource, 'limit': limit, 'source': source, 'metric': metric}
-    
+
     response = self.__getData__( __publicReadEndpoint__, query, False )
     return response;
 
   def read(self, device, service, resource, limit = 1, source = "live", metric = "avg" ):
     query = { 'device': device, 'service': service, 'resource': resource, 'limit': limit, 'source': source, 'metric': metric }
-    
+
     response = self.__getData__( __readEndpoint__, query, True )
     return response;
 
-  def write(self, device, service, resource, value, type = "attribute" ):
+  def write(self, device, service, resource, value, ts = None, type = "attribute" ):
     body = { 'device': device, 'service': service, 'resource': resource, 'value': value, 'type': type }
-    
+    ###
+    #if ts:
+    #  body['ts'] = ts
+    #else:
+    #  body['ts'] = round(time.time() * 1000)
+    ###
     response = self.__postData__( __writeEndpoint__, json.dumps(body, separators=(',', ':')), True )
     return response;
 
   def bulkWrite(self, device, data_array ):
     body = { 'device': device, 'data': data_array }
-    
+
     response = self.__postData__( __bulkWriteEndpoint__, json.dumps(body, separators=(',', ':')), True )
     return response;
 
-  def event(self, device, service, resource, data, source = None ):
+  def emit(self, device, service, resource, data, ts = None, source = None ):
     body = { 'device': device, 'service': service, 'resource': resource, 'data': data }
     if source:
       body['source'] = source
-    
+    ###
+    #if ts:
+    #  body['ts'] = ts
+    #else:
+    #  body['ts'] = round(time.time() * 1000)
+    ###
+
     response = self.__postData__( __eventEndpoint__, json.dumps(body, separators=(',', ':')), True )
     return response;
 
@@ -227,28 +240,27 @@ class Resource:
   service  = None
   resource = None
   bbt      = None
-  
+
   def __init__(self, bbt, device, service, resource):
     self.device   = device
     self.service  = service
     self.resource = resource
     self.bbt      = bbt
-  
-  def write(self, value, ts):
-    return self.bbt.write(self.device, self.service, self.resource, value)
-  
-  def update(self, value, ts):
-    return self.bbt.write(self.device, self.service, self.resource, value)
-  
-  def event(self, value):
-    return self.bbt.write(self.device, self.service, self.resource, value)
-  
-  def read(self, limit = 1, source = "live", metric = "avg"):
-    return self.bbt.read(self.device, self.service, self.resource, limit, source, metric)
-  
+
+  def write(self, value, ts = None):
+    return self.bbt.write(self.device, self.service, self.resource, ts = ts, value = value)
+
+  def emit(self, value, ts = None):
+    return self.bbt.emit(self.device, self.service, self.resource, ts = ts, data = value)
+
+  def read(self, limit = 1, owner = None, source = "live", metric = "avg"):
+    if owner:
+      return self.bbt.publicRead( owner, self.device, self.service, self.resource, limit, source, metric )
+    else:
+      return self.bbt.read(self.device, self.service, self.resource, limit, source, metric)
+
   def recentVal(self):
-    retval = self.bbt.read(self.device, self.service, self.resource)[0]
-    return DataPoint.fromJSON(retval)
+    return self.bbt.read(self.device, self.service, self.resource)[0]
 
 class DataPoint:
   device   = None
@@ -256,7 +268,7 @@ class DataPoint:
   resource = None
   value    = None
   ts       = None
-  
+
   def __init__(self, value, ts, device = None, service = None, resource = None):
     self.device   = device
     self.service  = service
@@ -307,3 +319,4 @@ class TypeError(Exception):
 
 class BadTypeError(Exception):
     pass
+
