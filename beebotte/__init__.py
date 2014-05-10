@@ -211,7 +211,7 @@ class BBT:
     response = self.__postData__( __bulkWriteEndpoint__, json.dumps(body, separators=(',', ':')), True )
     return response;
 
-  def emit(self, device, service, resource, data, ts = None, source = None ):
+  def publish(self, device, service, resource, data, ts = None, source = None ):
     body = { 'device': device, 'service': service, 'resource': resource, 'data': data }
     if source:
       body['source'] = source
@@ -250,8 +250,8 @@ class Resource:
   def write(self, value, ts = None):
     return self.bbt.write(self.device, self.service, self.resource, ts = ts, value = value)
 
-  def emit(self, value, ts = None):
-    return self.bbt.emit(self.device, self.service, self.resource, ts = ts, data = value)
+  def publish(self, data, ts = None):
+    return self.bbt.publish(self.device, self.service, self.resource, ts = ts, data = data)
 
   def read(self, limit = 1, owner = None, source = "live", metric = "avg"):
     if owner:
