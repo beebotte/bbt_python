@@ -3,7 +3,7 @@
 Contains methods for sending persistent and transient messages and for reading data.
 """
 
-__version__ = '0.1.0'
+__version__ = '0.1.2'
 
 import json
 import time
@@ -182,18 +182,67 @@ class BBT:
     r = requests.get( url, params=query, headers=headers )
     return self.__processResponse__( { 'status': r.status_code, 'data': r.text } )
 
+  """
+  Public Read
+  Reads data from the resource with the given metadata. This method expects the resource to have public access. 
+  In Beebotte, resources follow a 3 level hierarchy: Device -> Service -> Resource
+  Data is always associated with Resources.
+  This call will not be signed (no authentication required) as the resource is public.
+  
+  @param owner: required the owner (username) of the resource to read from.
+  @param device: required the device name.
+  @param service: required the service name.
+  @param resource: required the resource name to read from.
+  @param limit: optional number of records to return.
+  @param source: optional indicates whether to read from live data or from historical statistics. Accepts ('live', 'hour', 'day', 'week', 'month').
+  @param metric: optional indicates the metric to read. This works only with $source different than 'live'. Accepts ('avg', 'min', 'max', 'count')
+  
+  @return: The response data in JSON format if success, raises an error or failure.
+  """
   def publicRead(self, owner, device, service, resource, limit = 1, source = "live", metric = "avg" ):
     query = {'owner': owner, 'device': device, 'service': service, 'resource': resource, 'limit': limit, 'source': source, 'metric': metric}
 
     response = self.__getData__( __publicReadEndpoint__, query, False )
     return response;
 
+  """
+  Read
+  Reads data from the resource with the given metadata. 
+  In Beebotte, resources follow a 3 level hierarchy: Device -> Service -> Resource
+  Data is always associated with Resources.
+  This call will be signed to authenticate the calling user.
+  
+  @param device: required the device name.
+  @param service: required the service name.
+  @param resource: required the resource name to read from.
+  @param limit: optional number of records to return.
+  @param source: optional indicates whether to read from live data or from historical statistics. Accepts ('live', 'hour', 'day', 'week', 'month').
+  @param metric: optional indicates the metric to read. This works only with $source different than 'live'. Accepts ('avg', 'min', 'max', 'count')
+  
+  @return: The response data in JSON format if success, raises an error or failure.
+  """
   def read(self, device, service, resource, limit = 1, source = "live", metric = "avg" ):
     query = { 'device': device, 'service': service, 'resource': resource, 'limit': limit, 'source': source, 'metric': metric }
 
     response = self.__getData__( __readEndpoint__, query, True )
     return response;
 
+  """
+  Write (Persistent messages)
+  Writes data to the resource with the given metadata. 
+  In Beebotte, resources follow a 3 level hierarchy: Device -> Service -> Resource
+  Data is always associated with Resources.
+  This call will be signed to authenticate the calling user.
+  
+  @param device: required the device name.
+  @param service: required the service name.
+  @param resource: required the resource name to read from.
+  @param value: required the value to write (persist).
+  @param ts: optional timestamp in milliseconds (since epoch). If this parameter is not given, it will be automatically added with a value equal to the local system time.
+  @param type: optional default to 'attribute'. This is for future use.
+   
+  @return: true on success, raises an error or failure.
+  """
   def write(self, device, service, resource, value, ts = None, type = "attribute" ):
     body = { 'device': device, 'service': service, 'resource': resource, 'value': value, 'type': type }
     ###
@@ -205,12 +254,47 @@ class BBT:
     response = self.__postData__( __writeEndpoint__, json.dumps(body, separators=(',', ':')), True )
     return response;
 
+  """
+  Bulk Write (Persistent messages)
+  Writes an array of data in one API call. 
+  In Beebotte, resources follow a 3 level hierarchy: Device -> Service -> Resource
+  Data is always associated with Resources.
+  This call will be signed to authenticate the calling user.
+  
+  @param device: required the device name.
+  @param data_array: required the data array to send. Should follow the following format
+    [{
+      service required the service name.
+      resource required the resource name to read from.
+      value required the value to write (persist).
+      ts optional timestamp in milliseconds (since epoch). If this parameter is not given, it will be automatically added with a value equal to the local system time.
+      type optional default to 'attribute'. This is for future use.
+    }]
+   
+  @return: true on success, raises an error or failure.
+  """
   def bulkWrite(self, device, data_array ):
     body = { 'device': device, 'data': data_array }
 
     response = self.__postData__( __bulkWriteEndpoint__, json.dumps(body, separators=(',', ':')), True )
     return response;
 
+  """
+  Publish (Transient messages)
+  Publishes data to the resource with the given metadata. The published data will not be persisted. It will only be delivered to connected subscribers. 
+  In Beebotte, resources follow a 3 level hierarchy: Device -> Service -> Resource
+  Data is always associated with Resources.
+  This call will be signed to authenticate the calling user.
+  
+  @param device: required the device name.
+  @param service: required the service name.
+  @param resource: required the resource name to read from.
+  @param data: required the data to publish (transient).
+  @param ts: optional timestamp in milliseconds (since epoch). If this parameter is not given, it will be automatically added with a value equal to the local system time.
+  @param source: optional additional data that will be appended to the published message. This can be a logical identifier (session id) of the originator. Use this as suits you.
+   
+  @return: true on success, raises an error or failure.
+  """
   def publish(self, device, service, resource, data, ts = None, source = None ):
     body = { 'device': device, 'service': service, 'resource': resource, 'data': data }
     if source:
@@ -225,6 +309,20 @@ class BBT:
     response = self.__postData__( __eventEndpoint__, json.dumps(body, separators=(',', ':')), True )
     return response;
 
+  """
+  Client Authentication (used for the Presence and Resource subscription process)
+  Signs the given subscribe metadata and returns the signature.
+
+  @param sid: required the session id of the client.
+  @param device: required the device name. Should start with 'presence:' for presence channels and starts with 'private:' for private channels.
+  @param service: optional the service name.
+  @param resource: optional the resource name to read from.
+  @param ttl: optional the number of seconds the signature should be considered as valid (currently ignored) for future use.
+  @param read: optional indicates if read access is requested.
+  @param write: optional indicates if write access is requested.
+
+  @return: JSON object containing 'auth' element with value equal to the generated signature.
+  """
   def auth_client( self, sid, device, service = '*', resource = '*', ttl = 0, read = False, write = False ):
     r = 'false'
     w = 'false'
@@ -235,30 +333,84 @@ class BBT:
     stringToSign = "%s:%s.%s.%s:ttl=%s:read=%s:write=%s" % ( sid, device, service, resource, ttl, r, w )
     return self.sign(stringToSign)
 
+"""
+Utility class for dealing with Resources
+Contains methods for sending persistent and transient messages and for reading data.
+Mainly wrappers around Beebotte API calls. 
+"""
 class Resource:
   device   = None
   service  = None
   resource = None
   bbt      = None
 
+  """
+  Constructor, initializes the Resource object.
+  In Beebotte, resources follow a 3level hierarchy: Device -> Service -> Resource
+  Data is always associated with Resources.
+  
+  @param bbt: required reference to the Beebotte client connector.
+  @param device: required device name.
+  @param service: required service name.
+  @param resource: required resource name.
+  """
   def __init__(self, bbt, device, service, resource):
     self.device   = device
     self.service  = service
     self.resource = resource
     self.bbt      = bbt
 
+  """
+  Write (Persistent messages)
+  Writes data to this resource. 
+  This call will be signed to authenticate the calling user.
+  
+  @param value: required the value to write (persist).
+  @param ts: optional timestamp in milliseconds (since epoch). If this parameter is not given, it will be automatically added with a value equal to the local system time.
+   
+  @return: true on success, raises an error or failure.
+  """
   def write(self, value, ts = None):
     return self.bbt.write(self.device, self.service, self.resource, ts = ts, value = value)
 
+  """
+  Publish (Transient messages)
+  Publishes data to this resource. The published data will not be persisted. It will only be delivered to connected subscribers. 
+  This call will be signed to authenticate the calling user.
+  
+  @param data: required the data to publish (transient).
+  @param ts: optional timestamp in milliseconds (since epoch). If this parameter is not given, it will be automatically added with a value equal to the local system time.
+   
+  @return: true on success, raises an error or failure.
+  """
   def publish(self, data, ts = None):
     return self.bbt.publish(self.device, self.service, self.resource, ts = ts, data = data)
 
+  """
+  Read
+  Reads data from the this resource.
+  If the owner is set (value different than None) the behaviour is Public Read (no authentication).
+  If the owner is None, the behaviour is authenticated read.      
+  
+  @param limit: optional number of records to return.
+  @param owner: optional the owner (username) of the resource to read from for public read. None to read from the user's owned device.
+  @param source: optional indicates whether to read from live data or from historical statistics. Accepts ('live', 'hour', 'day', 'week', 'month').
+  @param metric: optional indicates the metric to read. This works only with $source different than 'live'. Accepts ('avg', 'min', 'max', 'count')
+  
+  @return: array of records (JSON) on success, raises an error or failure.
+  """
   def read(self, limit = 1, owner = None, source = "live", metric = "avg"):
     if owner:
       return self.bbt.publicRead( owner, self.device, self.service, self.resource, limit, source, metric )
     else:
       return self.bbt.read(self.device, self.service, self.resource, limit, source, metric)
 
+  """
+  Read
+  Reads the last inserted record. 
+  
+  @return: the last inserted record on success, raises an error or failure.
+  """
   def recentVal(self):
     return self.bbt.read(self.device, self.service, self.resource)[0]
 
