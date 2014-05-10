@@ -1,10 +1,16 @@
 from distutils.core import setup
+import os
 
+def read(filename):
+    with open(os.path.join(os.path.dirname(__file__), filename)) as f:
+        return f.read()
 setup(
     name='beebotte',
-    version='0.1.1',
+    version='0.1.2',
     description='Python library for interfacing with Beebotte',
+    long_description=read('README.md'),
     url='http://beebotte.com',
+    download_url='https://pypi.python.org/pypi/beebotte/',
     author='Beebotte',
     author_email='contact@beebotte.com',
     maintainer="Bachar Wehbi",
