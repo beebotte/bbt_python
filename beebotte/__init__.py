@@ -3,7 +3,7 @@
 Contains methods for sending persistent and transient messages and for reading data.
 """
 
-__version__ = '0.2.0'
+__version__ = '0.2.1'
 
 import json
 import time
@@ -199,7 +199,7 @@ class BBT:
   
   @return: The response data in JSON format if success, raises an error or failure.
   """
-  def publicRead(self, owner, channel, resource, limit = 750, source = "raw", time_range = None, data_filter = None, sample_rate = None):
+  def readPublic(self, owner, channel, resource, limit = 750, source = "raw", time_range = None, data_filter = None, sample_rate = None):
     query = {'limit': limit, 'source': source}
     if time_range:
       query['time-range'] = time_range
@@ -267,7 +267,7 @@ class BBT:
     return response;
 
   """
-  Batch Write (Persistent messages)
+  Bulk Write (Persistent messages)
   Writes an array of data in one API call. 
   In Beebotte, resources follow a 2 level hierarchy: Channel -> Resource
   Data is always associated with Resources.
@@ -283,7 +283,7 @@ class BBT:
    
   @return: true on success, raises an error or failure.
   """
-  def writes(self, channel, data_array ):
+  def writeBulk(self, channel, data_array ):
     body = { 'data': data_array }
 
     endpoint = "%s/%s" % ( __writeEndpoint__, channel, resource )
@@ -321,7 +321,7 @@ class BBT:
     return response;
 
   """
-  Batch Publish (Transient messages)
+  Bulk Publish (Transient messages)
   Publishes an array of data in one API call.
   In Beebotte, resources follow a 2 level hierarchy: Channel -> Resource
   Data is always associated with Resources.
@@ -339,7 +339,7 @@ class BBT:
 
   @return: true on success, raises an error or failure.
   """
-  def publishes(self, channel, data_array ):
+  def publishBulk(self, channel, data_array ):
     body = { 'data': data_array }
 
     endpoint = "%s/%s" % ( __publishEndpoint__, channel, resource )
