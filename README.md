@@ -5,7 +5,7 @@ Beebotte Python SDK
 |---------------|----------------------------------------|
 | overview      | http://beebotte.com/overview           |
 | tutorials     | http://beebotte.com/tutorials          |
-| apidoc        | http://beebotte.com/api                |
+| apidoc        | http://beebotte.com/docs/restapi       |
 | source        | https://github.com/beebotte/bbt_python |
 
 ### Bugs / Feature Requests
