@@ -58,7 +58,7 @@ You can read data from a public channel by specifying the channel owner:
 ### Writing Data
 You can write data to a resource of one of your channels using:
 
-    bbt.write("channel1", "resource1", "Hello Horld")
+    bbt.write("channel1", "resource1", "Hello World")
     
 If you have multiple records to write (to one or multiple resources of the same channel), you can use the `bulk write` method:
 
