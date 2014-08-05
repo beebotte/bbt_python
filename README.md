@@ -13,20 +13,20 @@ Beebotte Python SDK
 Think you.ve found a bug? Want to see a new feature in beebotte? Please open an
 issue in github. Please provide as much information as possible about the issue type and how to reproduce it.
 
-  https://github.com/beebotte/bbt_python/issues
+    https://github.com/beebotte/bbt_python/issues
 
 ## Install
 
 Using pip on Linux
 
-  pip install beebotte
+    pip install beebotte
 
 Using pip on MS Windows
 
-  python -m pip install beebotte
+    python -m pip install beebotte
   
 Clone the source code from github
-  git clone https://github.com/beebotte/bbt_python.git
+    git clone https://github.com/beebotte/bbt_python.git
   
 ## Usage
 To use the library, you need to be a registered user. If this is not the case, create your account at <http://beebotte.com> and note your access credentials.
