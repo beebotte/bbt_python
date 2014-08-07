@@ -72,10 +72,10 @@ You can publish data to a channel resource using:
 
     bbt.publish("any_channel", "any_resource", "Hello Horld")
 
-Published data is transient. It will not saved to any database; rather, it will be delivered to active subscribers in real time. 
+Published data is transient. It will not be saved to any database; rather, it will be delivered to active subscribers in real time. 
 The Publish operations do not require that the channel and resource be actually created. 
-They will be considered as virtual: the channel and resource exist as lng as you are publishing data to them. 
-By default, published data is public, publish a private message, you need to add `private-` prefix to the channel name like this:
+They will be considered as virtual: the channel and resource exist as long as you are publishing data to them. 
+By default, published data is public, to publish a private message, you need to add `private-` prefix to the channel name like this:
 
     bbt.publish("private-any_channel", "any_resource", "Hello World")
 
