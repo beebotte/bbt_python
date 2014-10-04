@@ -3,7 +3,7 @@
 Contains methods for sending persistent and transient messages and for reading data.
 """
 
-__version__ = '0.2.1'
+__version__ = '0.2.2'
 
 import json
 import time
@@ -284,9 +284,9 @@ class BBT:
   @return: true on success, raises an error or failure.
   """
   def writeBulk(self, channel, data_array ):
-    body = { 'data': data_array }
+    body = { 'records': data_array }
 
-    endpoint = "%s/%s" % ( __writeEndpoint__, channel, resource )
+    endpoint = "%s/%s" % ( __writeEndpoint__, channel)
     response = self.__postData__( endpoint, json.dumps(body, separators=(',', ':')), True )
     return response;
 
@@ -340,9 +340,9 @@ class BBT:
   @return: true on success, raises an error or failure.
   """
   def publishBulk(self, channel, data_array ):
-    body = { 'data': data_array }
+    body = { 'records': data_array }
 
-    endpoint = "%s/%s" % ( __publishEndpoint__, channel, resource )
+    endpoint = "%s/%s" % ( __publishEndpoint__, channel)
     response = self.__postData__( endpoint, json.dumps(body, separators=(',', ':')), True )
     return response;
 
