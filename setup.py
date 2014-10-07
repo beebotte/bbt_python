@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name='beebotte',
-    version='0.2.1',
+    version='0.2.2',
     description='Python library for interfacing with Beebotte',
     url='http://beebotte.com',
     download_url='https://pypi.python.org/pypi/beebotte/',
