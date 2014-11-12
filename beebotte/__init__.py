@@ -3,7 +3,7 @@
 Contains methods for sending persistent and transient messages and for reading data.
 """
 
-__version__ = '0.2.2'
+__version__ = '0.3.0'
 
 import json
 import time
@@ -15,7 +15,7 @@ from email import utils
 try: import urllib.parse as urllib
 except ImportError: import urllib
 
-__publicReadEndpoint__  = "/vi/public/data/read"
+__publicReadEndpoint__  = "/v1/public/data/read"
 __readEndpoint__        = "/v1/data/read"
 __writeEndpoint__       = "/v1/data/write"
 __publishEndpoint__     = "/v1/data/publish"
@@ -23,6 +23,7 @@ __publishEndpoint__     = "/v1/data/publish"
 class BBT:
   akey     = None
   skey     = None
+  token    = None
   hostname = None
   port     = None
   ssl      = None
@@ -36,12 +37,19 @@ class BBT:
   @param port: The port number.
   @param ssl: Indicates if SSL (TLS) should be used.
   """
-  def __init__(self, akey, skey, hostname = "api.beebotte.com", port = "80", ssl = False):
-    self.akey     = akey
-    self.skey     = skey
+  def __init__(self, akey = None, skey = None, token = None, hostname = "api.beebotte.com", port = "80", ssl = False):
+    if akey and skey and token == None :
+      self.akey     = akey
+      self.skey     = skey
+    elif akey == None and skey == None and token:
+      self.token    = token
+    else:
+      raise InitializationError("Initialization Error; Message: You must specify either (1) your access and secret keys pair or (2) your channel token!")
+
     self.hostname = hostname
     self.port     = port
     self.ssl      = ssl
+
 
   """
   Utility function that signs the given string with the secret key using SHA1 HMAC and returns a string containing
@@ -144,13 +152,19 @@ class BBT:
     else:
       url = "%s://%s:%s%s" % ( 'http', self.hostname, self.port, uri )
 
-    md5 = bytes.decode( base64.b64encode( hashlib.md5( str.encode( data ) ).digest() ) )
-    date = utils.formatdate()
-    if auth:
-      sig = self.__signRequest__('POST', uri, date, "application/json", md5)
-      headers = { 'Content-MD5': md5, 'Content-Type': 'application/json', 'Date': date, 'Authorization': sig }
+    if self.token: 
+      if auth:
+        headers = { 'Content-Type': 'application/json', 'X-Auth-Token': self.token }
+      else:
+        headers = { 'Content-Type': 'application/json' }
     else:
-      headers = { 'Content-MD5': md5, 'Content-Type': 'application/json', 'Date': date }
+      md5 = bytes.decode( base64.b64encode( hashlib.md5( str.encode( data ) ).digest() ) )
+      date = utils.formatdate()
+      if auth:
+        sig = self.__signRequest__('POST', uri, date, "application/json", md5)
+        headers = { 'Content-MD5': md5, 'Content-Type': 'application/json', 'Date': date, 'Authorization': sig }
+      else:
+        headers = { 'Content-MD5': md5, 'Content-Type': 'application/json', 'Date': date }
 
     r = requests.post( url, data=data, headers=headers )
     return self.__processResponse__( { 'status': r.status_code, 'data': r.text } )
@@ -171,12 +185,19 @@ class BBT:
       url = "%s://%s:%s%s" % ( 'http', self.hostname, self.port, uri )
 
     full_uri = "%s?%s" % ( uri, urllib.urlencode( query ) )
-    date = utils.formatdate()
-    if auth:
-      sig = self.__signRequest__('GET', full_uri, date, "application/json")
-      headers = { 'Content-Type': 'application/json', 'Date': date, 'Authorization': sig }
+
+    if self.token:
+      if auth:
+        headers = { 'Content-Type': 'application/json', 'X-Auth-Token': self.token }
+      else:
+        headers = { 'Content-Type': 'application/json' }
     else:
-      headers = { 'Content-Type': 'application/json', 'Date': date }
+      date = utils.formatdate()
+      if auth:
+        sig = self.__signRequest__('GET', full_uri, date, "application/json")
+        headers = { 'Content-Type': 'application/json', 'Date': date, 'Authorization': sig }
+      else:
+        headers = { 'Content-Type': 'application/json', 'Date': date }
 
     r = requests.get( url, params=query, headers=headers )
     return self.__processResponse__( { 'status': r.status_code, 'data': r.text } )
@@ -238,7 +259,7 @@ class BBT:
       query['sample-rate'] = sample-rate
 
     endpoint = "%s/%s/%s" % ( __readEndpoint__, channel, resource )
-    response = self.__getData__( endpoint, query, False )
+    response = self.__getData__( endpoint, query, True )
     return response;
 
   """
@@ -434,11 +455,11 @@ class Resource:
   
   @return: array of records (JSON) on success, raises an error or failure.
   """
-  def read(self, limit = 750, owner = None, source = "live", time_range = None, data_filter = None, sample_rate = None):
-    if owner:
+  def read(self, limit = 750, owner = None, source = "raw", time_range = None, data_filter = None, sample_rate = None):
+    if owner != None:
       return self.bbt.publicRead( owner, self.channel, self.resource, limit, source, time_range, data_filter, sample_rate )
     else:
-      return self.bbt.read(self.channel, self.resource, limit, source, time_range)
+      return self.bbt.read(channel=self.channel, resource=self.resource, limit=limit, source=source, time_range=time_range)
 
   """
   Read
@@ -468,6 +489,9 @@ class DataPoint:
 
   def toJSON(self, owner = None):
     return {'owner': owner, 'channel': self.channel, 'resource': self.resource, 'data': self.data, 'ts': self.ts}
+
+class InitializationError(Exception):
+    pass
 
 class AuthenticationError(Exception):
     pass
