@@ -89,19 +89,19 @@ If you have multiple records to publish (to one or multiple resources of the sam
 ### Resource Object
 The library provides a Resource Class that can be used as follows
 
-    //Create the resource object
+    #Create the resource object
     resource = Resource(bbt, "channel1", "resource1")
     
-    //Read data
+    #Read data
     records = resource.read(limit = 2 /* last 2 records */)
     
-    //Read the last written record
+    #Read the last written record
     record = resource.recentVal()
     
-    //Write data
+    #Write data
     resource.write("Hello World")
     
-    //Publish data
+    #Publish data
     resource.publish("Hola amigo")
 
 ## License
