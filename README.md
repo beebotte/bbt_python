@@ -48,7 +48,7 @@ Use your account API and secret keys to initialize Beebotte connector:
     
     ### Alternatively you can authenticate using the channel token
     _token      = 'YOUR_CHANNEL_TOKEN'
-    bbt = BBT(token = '1414363665284_JOYoFlbfvk2eYDzx', hostname = _hostname)
+    bbt = BBT(token = _token, hostname = _hostname)
 
 ### Reading Data
 You can read data from one of your channel resources using:
