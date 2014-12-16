@@ -11,6 +11,9 @@ setup(
     maintainer="Bachar Wehbi",
     maintainer_email='bwehbi@beebotte.com',
     packages=['beebotte'],
+    install_requires=[
+        "requests"
+    ],
     classifiers=[
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python",
