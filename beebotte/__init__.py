@@ -3,7 +3,7 @@
 Contains methods for sending persistent and transient messages and for reading data.
 """
 
-__version__ = '0.3.0'
+__version__ = '0.3.1'
 
 import json
 import time
@@ -272,13 +272,13 @@ class BBT:
   @param channel: required the channel name.
   @param resource: required the resource name to read from.
   @param data: required the value to write (persist).
-  @param ts: optional timestamp in milliseconds (since epoch). If this parameter is not given, it will be automatically added with a value equal to the local system time.
+  @param ts: optional timestamp in milliseconds (since epoch). If this parameter is not given, it will be automatically added with a value equal to the local system time. If it is set to zero, it will be ignored. In this case, the message timestamp would be Beebotte's reception time.
    
   @return: true on success, raises an error or failure.
   """
   def write(self, channel, resource, data, ts = None ):
     body = { 'data': data }
-    if ts:
+    if ts != None:
       body['ts'] = ts
     else:
       body['ts'] = round(time.time() * 1000)
@@ -322,7 +322,7 @@ class BBT:
   @param channel: required the channel name.
   @param resource: required the resource name to read from.
   @param data: required the data to publish (transient).
-  @param ts: optional timestamp in milliseconds (since epoch). If this parameter is not given, it will be automatically added with a value equal to the local system time.
+  @param ts: optional timestamp in milliseconds (since epoch). If this parameter is not given, it will be automatically added with a value equal to the local system time.  If it is set to zero, it will be ignored. In this case, the message timestamp would be Beebotte's reception time
   @param source: optional additional data that will be appended to the published message. This can be a logical identifier (session id) of the originator. Use this as suits you.
    
   @return: true on success, raises an error or failure.
@@ -332,7 +332,7 @@ class BBT:
     if source:
       body['source'] = source
     
-    if ts:
+    if ts != None:
       body['ts'] = ts
     else:
       body['ts'] = round(time.time() * 1000)

@@ -1,6 +1,11 @@
 History
 =======
 
+## 0.3.1
+
+* Fix inconsistent timestamp when system time is out of sync
+  [#5](https://github.com/beebotte/bbt_python/issues/5).
+
 ## 0.3.0 
 
 * Add Channel Token based authentication
