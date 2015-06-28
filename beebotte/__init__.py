@@ -19,6 +19,7 @@ __publicReadEndpoint__  = "/v1/public/data/read"
 __readEndpoint__        = "/v1/data/read"
 __writeEndpoint__       = "/v1/data/write"
 __publishEndpoint__     = "/v1/data/publish"
+__connectionsEndpoint__ = "/v1/connections"
 
 class BBT:
   akey     = None
@@ -204,6 +205,41 @@ class BBT:
         headers = { 'Content-Type': 'application/json', 'Date': date }
 
     r = requests.get( url, params=query, headers=headers )
+    return self.__processResponse__( { 'status': r.status_code, 'data': r.text } )
+
+  """
+  Sends a DELETE request with the given query parameters to the given URI endpoint and returns the response data.
+
+  @param uri: The uri endpoint.
+  @param query: the query parameters in JSON format.
+  @param auth: Indicates if the request should be authenticated (defaults to true).
+
+  @return: The response data in JSON format if success, raises an error or failure.
+  """
+  def __deleteData__(self, uri, query, auth = True):
+    if self.ssl:
+      url = "%s://%s:%s%s" % ( 'https', self.hostname, self.port, uri )
+    else:
+      url = "%s://%s:%s%s" % ( 'http', self.hostname, self.port, uri )
+
+    full_uri = "%s" % ( uri )
+    if query != None:
+      full_uri = "%s?%s" % ( full_uri, urllib.urlencode( query ) )
+
+    if self.token:
+      if auth:
+        headers = { 'Content-Type': 'application/json', 'X-Auth-Token': self.token }
+      else:
+        headers = { 'Content-Type': 'application/json' }
+    else:
+      date = utils.formatdate()
+      if auth:
+        sig = self.__signRequest__('DELETE', full_uri, date, "application/json")
+        headers = { 'Content-Type': 'application/json', 'Date': date, 'Authorization': sig }
+      else:
+        headers = { 'Content-Type': 'application/json', 'Date': date }
+
+    r = requests.delete( url, params=query, headers=headers )
     return self.__processResponse__( { 'status': r.status_code, 'data': r.text } )
 
   """
@@ -393,6 +429,56 @@ class BBT:
       w = 'true'
     stringToSign = "%s:%s.%s.:ttl=%s:read=%s:write=%s" % ( sid, channel, resource, ttl, r, w )
     return self.sign(stringToSign)
+
+  """
+  USER CONNECTION MANAGEMENT ROUTINES
+  """
+
+  """
+  Gets an Array of currently connected users (using the Websockets interface) with the given userid and session id.
+  If no parameter is given, this method returns an array of all connected users.
+  If @param userid is given, only connection with that user id will be given.
+  If @param sid is also given, only connection with that userid and sid will be given.
+
+  @param userid: optional the user identifier as given when connecting to the Websockets interface.
+  @param sid: optional the session identifier of a Websockets connection.
+
+  @return: Array of user connection description in JSON format on success, raises an error on failure.
+  """
+  def getUserConnections(self, userid = None, sid = None):
+    if self.skey == None:
+      raise AuthenticationError("Authentication Error; Message: This method requires access key and secret key authentication!")
+
+    endpoint = __connectionsEndpoint__
+    query = None
+    if userid != None:
+      endpoint = "%s/%s" % ( __connectionsEndpoint__, userid )
+    elif sid != None:
+      query = {'sid': sid}
+
+    response = self.__getData__( endpoint, query, True )
+    return response;
+
+  """
+  Drops Websockets connection with the given userid and session id.
+  If @param sid is is not provided, all connections with @param userid will be dropped.
+
+  @param userid: required the user identifier as given when connecting to the Websockets interface.
+  @param sid: optional the session identifier of a Websockets connection.
+
+  @return: OK on success, raises an error on failure.
+  """
+  def dropUserConnection(self, userid, sid = None):
+    if self.skey == None:
+      raise AuthenticationError("Authentication Error; Message: This method requires access key and secret key authentication!")
+
+    query = None
+    if sid != None:
+      query = {'sid': sid}
+
+    endpoint = "%s/drop/%s" % ( __connectionsEndpoint__, userid )
+    response = self.__deleteData__( endpoint, query, True )
+    return response;
 
 """
 Utility class for dealing with Resources
