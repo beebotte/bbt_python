@@ -186,7 +186,9 @@ class BBT:
     else:
       url = "%s://%s:%s%s" % ( 'http', self.hostname, self.port, uri )
 
-    full_uri = "%s?%s" % ( uri, urllib.urlencode( query ) )
+    full_uri = "%s" % ( uri )
+    if query != None:
+      full_uri = "%s?%s" % ( full_uri, urllib.urlencode( query ) )
 
     if self.token:
       if auth:
