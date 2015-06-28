@@ -556,6 +556,23 @@ class BBT:
     response = self.__deleteData__( endpoint, None, True )
     return response;
 
+  """
+  Regenerates a new Channel Token for the given @channel if it exists.
+  Regenerating a new Channel Token will invalidate the last active token. A channel can only have one Token at a time.
+
+  @param channel: required the channel name.
+
+  @return JSON description of the channel with the newly generated Token on success, raises an error on failure.
+  """
+  def regenerateChannelToken(self, channel):
+    if self.skey == None:
+      raise AuthenticationError("Authentication Error; Message: This method requires access key and secret key authentication!")
+
+    endpoint = "%s/%s/token/regenerate" % ( __channelsEndpoint__, channel )
+
+    response = self.__getData__( endpoint, None, True )
+    return response;
+
 """
 Utility class for dealing with Resources
 Contains methods for sending persistent and transient messages and for reading data.
