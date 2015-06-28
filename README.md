@@ -109,6 +109,6 @@ The library provides a Resource Class that can be used as follows
     resource.publish("Hola amigo")
 
 ## License
-Copyright 2013 - 2014 Beebotte.
+Copyright 2013 - 2015 Beebotte.
 
 [The MIT License](http://opensource.org/licenses/MIT)
