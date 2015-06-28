@@ -3,7 +3,7 @@
 Contains methods for sending persistent and transient messages and for reading data.
 """
 
-__version__ = '0.3.1'
+__version__ = '0.4.0'
 
 import json
 import time
