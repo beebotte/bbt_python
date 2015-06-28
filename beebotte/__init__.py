@@ -144,7 +144,7 @@ class BBT:
 
   @param uri: The uri endpoint.
   @param data: the data to send.
-  @param auth: Indicates if the Post request should be authenticated (defaults to true).
+  @param auth: Indicates if the request should be authenticated (defaults to true).
 
   @return: The response data in JSON format if success, raises an error or failure.
   """
@@ -176,7 +176,7 @@ class BBT:
 
   @param uri: The uri endpoint.
   @param query: the query parameters in JSON format.
-  @param auth: Indicates if the Post request should be authenticated (defaults to true).
+  @param auth: Indicates if the request should be authenticated (defaults to true).
 
   @return: The response data in JSON format if success, raises an error or failure.
   """
