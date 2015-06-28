@@ -88,7 +88,9 @@ class BBT:
   """
   def __processResponse__(self, response):
     code    = response['status']
-    data   = json.loads(response['data'])
+    data   = {}
+    if response['data']:
+      data = json.loads(response['data'])
     if code < 400:
       return data
     else:
