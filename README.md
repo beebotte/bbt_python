@@ -90,6 +90,52 @@ If you have multiple records to publish (to one or multiple resources of the sam
         {"resource": "resource2", "data": "World"}
     ])
 
+### Get Channel
+You can get the JSON description of a channel using:
+
+    channel = bbt.getChannel("channel1")
+
+If you want to get all your created channels, leave the `channel` parameter to `None`:
+
+    channels = bbt.getChannel()
+
+This will return an array of all your channels. 
+
+### Delete Channel
+You can delete a channel using:
+
+    bbt.deleteChannel("channel1")
+
+### Get Resource
+You can get the JSON description of a resource of a channel using:
+
+    resource = bbt.getResource("channel1", "resource1")
+
+If you want to get all resources of a channel:
+
+    resources = bbt.getResource("channel1")
+
+This will return an array of all the channel resources. 
+
+### Delete Resource
+You can delete a resource of a channel using:
+
+    bbt.deleteChannel("channel1", "resource1")
+
+### Channel Token Regeneration
+You can regenerate a channel token using:
+
+```python
+    channel = bbt.regenerateChannelToken("channel1")
+    
+    ## New token accessible using
+    newToken = channel.token
+```
+
+This operation will return the JSON description of the channel with the newly generated Token.
+Regenerating a channel token will invalidate the last token in use. 
+Don't forget to update your code with the new Token after regeneration.
+
 ### Resource Object
 The library provides a Resource Class that can be used as follows
 
