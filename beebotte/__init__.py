@@ -20,6 +20,7 @@ __readEndpoint__        = "/v1/data/read"
 __writeEndpoint__       = "/v1/data/write"
 __publishEndpoint__     = "/v1/data/publish"
 __connectionsEndpoint__ = "/v1/connections"
+__channelsEndpoint__    = "/v1/channels"
 
 class BBT:
   akey     = None
@@ -478,6 +479,81 @@ class BBT:
 
     endpoint = "%s/drop/%s" % ( __connectionsEndpoint__, userid )
     response = self.__deleteData__( endpoint, query, True )
+    return response;
+
+  """
+  CHANNEL AND RESOURCE MANAGEMENT ROUTINES
+  """
+
+  """
+  Returns a resource or all resources of a given channel.
+  If resource is given, only the specified resource description will be returned, otherwise, an array of
+  all the resource descriptions of that channel will be returned.
+
+  @param channel: required the channel name.
+  @param resource: optional the resource name.
+  @return Array of resurce descriptions on success, raises an error on failure.
+  """
+  def getResource(self, channel, resource = None):
+    if self.skey == None:
+      raise AuthenticationError("Authentication Error; Message: This method requires access key and secret key authentication!")
+
+    endpoint = "%s/%s/resources" % ( __channelsEndpoint__, channel )
+
+    if resource != None:
+      endpoint = "%s/%s" % ( endpoint, resource )
+
+    response = self.__getData__( endpoint, None, True )
+    return response;
+
+  """
+  Deletes a resource from a channel.
+
+  @param channel: required the channel name.
+  @param resource: required the resource name to read from.
+
+  @return true on success, raises an error on failure.
+  """
+  def deleteResource(self, channel, resource):
+    if self.skey == None:
+      raise AuthenticationError("Authentication Error; Message: This method requires access key and secret key authentication!")
+
+    endpoint = "%s/%s/resources/%s" % ( __channelsEndpoint__, channel, resource )
+    response = self.__deleteData__( endpoint, None, True )
+    return response;
+
+  """
+  Returns a description of the given channel or of all the user account's channels if channel is not provided.
+
+  @param channel: optional the channel name.
+
+  @return Array of channel descriptions on success, raises an error on failure.
+  """
+  def getChannel(self, channel = None):
+    if self.skey == None:
+      raise AuthenticationError("Authentication Error; Message: This method requires access key and secret key authentication!")
+
+    endpoint = __channelsEndpoint__
+
+    if channel != None:
+      endpoint = "%s/%s" % ( endpoint, channel )
+
+    response = self.__getData__( endpoint, None, True )
+    return response;
+
+  """
+  Deletes the specified channel from the user account's.
+
+  @param channel: required the channel name to delete.
+
+  @return true on success, raises an error on failure.
+  """
+  def deleteChannel(self, channel):
+    if self.skey == None:
+      raise AuthenticationError("Authentication Error; Message: This method requires access key and secret key authentication!")
+
+    endpoint = "%s/%s" % ( __channelsEndpoint__, channel )
+    response = self.__deleteData__( endpoint, None, True )
     return response;
 
 """
