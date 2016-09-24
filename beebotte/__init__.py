@@ -22,6 +22,38 @@ __publishEndpoint__     = "/v1/data/publish"
 __connectionsEndpoint__ = "/v1/connections"
 __channelsEndpoint__    = "/v1/channels"
 
+class BBT_Types:
+
+  """
+  Beebotte resource types
+  """
+  ### Basic types
+  Any        = "any"
+  Number     = "number"
+  String     = "string"
+  Boolean    = "boolean"
+  Object     = "object"
+  Function   = "function"
+  Array      = "array"
+
+  ### Constrained types
+  Alpha      = "alphabetic"
+  Alphanum   = "alphanumeric"
+  Decimal    = "decimal"
+  Rate       = "rate"
+  Percentage = "percentage"
+  Email      = "email"
+  GPS        = "gps"
+  CPU        = "cpu"
+  Memory     = "memory"
+  NetIf      = "netif"
+  Disk       = "disk"
+
+  ### Unit types (all numeric - functional)
+  Temp       = "temperature"
+  Humidity   = "humidity"
+  BodyTemp   = "body_temp"
+
 class BBT:
   akey     = None
   skey     = None
@@ -29,6 +61,7 @@ class BBT:
   hostname = None
   port     = None
   ssl      = None
+
 
   """
   Creates and maintains an object holding user credentials and connection parameters to be used as needed.
@@ -92,7 +125,10 @@ class BBT:
     code    = response['status']
     data   = {}
     if response['data']:
-      data = json.loads(response['data'])
+      try:
+        data = json.loads(response['data'])
+      except ValueError:
+        data = response['data']
     if code < 400:
       return data
     else:
@@ -156,7 +192,7 @@ class BBT:
     else:
       url = "%s://%s:%s%s" % ( 'http', self.hostname, self.port, uri )
 
-    if self.token: 
+    if self.token:
       if auth:
         headers = { 'Content-Type': 'application/json', 'X-Auth-Token': self.token }
       else:
@@ -245,11 +281,11 @@ class BBT:
 
   """
   Public Read
-  Reads data from the resource with the given metadata. This method expects the resource to have public access. 
+  Reads data from the resource with the given metadata. This method expects the resource to have public access.
   In Beebotte, resources follow a 2 level hierarchy: Channel -> Resource
   Data is always associated with a Resources.
   This call will not be signed (no authentication required) as the resource is public.
-  
+
   @param owner: required the owner (username) of the resource to read from.
   @param channel: required the channel name.
   @param resource: required the resource name to read from.
@@ -258,7 +294,7 @@ class BBT:
   @param time_range: optional indicates the timerange for the returned records. Accepts ('Xhour', 'Xday', 'Xweek', 'Xmonth') with X a positive integer, or ('today', 'yesterday', 'current-ween', 'last-week', 'current-month', 'last-month', 'ytd' ).
   @param data_filter filters data records to be returned
   @param sample_rate reduces the number of records to return (number between 0 and 1)
-  
+
   @return: The response data in JSON format if success, raises an error or failure.
   """
   def readPublic(self, owner, channel, resource, limit = 750, source = "raw", time_range = None, data_filter = None, sample_rate = None):
@@ -275,11 +311,11 @@ class BBT:
 
   """
   Read
-  Reads data from the resource with the given metadata. 
+  Reads data from the resource with the given metadata.
   In Beebotte, resources follow a 2 level hierarchy: Channel -> Resource
   Data is always associated with Resources.
   This call will be signed to authenticate the calling user.
-  
+
   @param channel: required the channel name.
   @param resource: required the resource name to read from.
   @param limit: optional number of records to return.
@@ -287,7 +323,7 @@ class BBT:
   @param time_range: optional indicates the timerange for the returned records. Accepts ('Xhour', 'Xday', 'Xweek', 'Xmonth') with X a positive integer, or ('today', 'yesterday', 'current-ween', 'last-week', 'current-month', 'last-month', 'ytd' ).
   @param data_filter filters data records to be returned
   @param sample_rate reduces the number of records to return (number between 0 and 1)
-  
+
   @return: The response data in JSON format if success, raises an error or failure.
   """
   def read(self, channel, resource, limit = 1, source = "raw", time_range = None, data_filter = None, sample_rate = None ):
@@ -305,16 +341,16 @@ class BBT:
 
   """
   Write (Persistent messages)
-  Writes data to the resource with the given metadata. 
+  Writes data to the resource with the given metadata.
   In Beebotte, resources follow a 2 level hierarchy: Channel -> Resource
   Data is always associated with Resources.
   This call will be signed to authenticate the calling user.
-  
+
   @param channel: required the channel name.
   @param resource: required the resource name to read from.
   @param data: required the value to write (persist).
   @param ts: optional timestamp in milliseconds (since epoch). If this parameter is not given, it will be automatically added with a value equal to the local system time. If it is set to zero, it will be ignored. In this case, the message timestamp would be Beebotte's reception time.
-   
+
   @return: true on success, raises an error or failure.
   """
   def write(self, channel, resource, data, ts = None ):
@@ -324,17 +360,17 @@ class BBT:
     else:
       body['ts'] = round(time.time() * 1000)
 
-    endpoint = "%s/%s/%s" % ( __writeEndpoint__, channel, resource )    
+    endpoint = "%s/%s/%s" % ( __writeEndpoint__, channel, resource )
     response = self.__postData__( endpoint, json.dumps(body, separators=(',', ':')), True )
     return response;
 
   """
   Bulk Write (Persistent messages)
-  Writes an array of data in one API call. 
+  Writes an array of data in one API call.
   In Beebotte, resources follow a 2 level hierarchy: Channel -> Resource
   Data is always associated with Resources.
   This call will be signed to authenticate the calling user.
-  
+
   @param channel: required the channel name.
   @param data_array: required the data array to send. Should follow the following format
     [{
@@ -342,7 +378,7 @@ class BBT:
       data required the value to write (persist).
       ts optional timestamp in milliseconds (since epoch). If this parameter is not given, it will be automatically added with a value equal to the local system time.
     }]
-   
+
   @return: true on success, raises an error or failure.
   """
   def writeBulk(self, channel, data_array ):
@@ -354,30 +390,30 @@ class BBT:
 
   """
   Publish (Transient messages)
-  Publishes data to the resource with the given metadata. The published data will not be persisted. It will only be delivered to connected subscribers. 
+  Publishes data to the resource with the given metadata. The published data will not be persisted. It will only be delivered to connected subscribers.
   In Beebotte, resources follow a 2 level hierarchy: Channel -> Resource
   Data is always associated with Resources.
   Publish operations does not require a resource to be initially configured on Beebotte.
   This call will be signed to authenticate the calling user.
-  
+
   @param channel: required the channel name.
   @param resource: required the resource name to read from.
   @param data: required the data to publish (transient).
   @param ts: optional timestamp in milliseconds (since epoch). If this parameter is not given, it will be automatically added with a value equal to the local system time.  If it is set to zero, it will be ignored. In this case, the message timestamp would be Beebotte's reception time
   @param source: optional additional data that will be appended to the published message. This can be a logical identifier (session id) of the originator. Use this as suits you.
-   
+
   @return: true on success, raises an error or failure.
   """
   def publish(self, channel, resource, data, ts = None, source = None ):
     body = { 'data': data }
     if source:
       body['source'] = source
-    
+
     if ts != None:
       body['ts'] = ts
     else:
       body['ts'] = round(time.time() * 1000)
-    
+
     endpoint = "%s/%s/%s" % ( __publishEndpoint__, channel, resource )
     response = self.__postData__( endpoint, json.dumps(body, separators=(',', ':')), True )
     return response;
@@ -387,7 +423,7 @@ class BBT:
   Publishes an array of data in one API call.
   In Beebotte, resources follow a 2 level hierarchy: Channel -> Resource
   Data is always associated with Resources.
-  Publish operations does not require a resource to be initially configured on Beebotte. 
+  Publish operations does not require a resource to be initially configured on Beebotte.
   This call will be signed to authenticate the calling user.
 
   @param channel: required the channel name.
@@ -486,6 +522,48 @@ class BBT:
   """
 
   """
+  Adds a new resource to the given channel.
+
+  @param channel: required the channel name.
+  @param name: the resource name.
+  @param vtype: the resource value type; defaults to Any type.
+  @param label: optional the resource label.
+  @param description: optional the resource description.
+  @param sendOnSubscribe: optional indicates if most recent value should be sent on subscription.defaults to false.
+
+  @return True os success, raises an error on failure.
+  """
+  def addResource(
+    self,
+    channel,
+    name,
+    vtype = BBT_Types.Any,
+    label = None,
+    description = None,
+    sendOnSubscribe = False
+  ):
+
+    if self.skey == None:
+      raise AuthenticationError("Authentication Error; Message: This method requires access key and secret key authentication!")
+
+    endpoint = "%s/%s/resources" % ( __channelsEndpoint__, channel )
+
+    _label = label or name
+    _desc = description or _label
+
+    body = {
+      'name': name,
+      'label': _label,
+      'description': _desc,
+      'vtype': vtype,
+      'sendOnSubscribe': sendOnSubscribe
+    }
+
+    response = self.__postData__( endpoint, json.dumps(body, separators=(',', ':')), True )
+    return response;
+
+
+  """
   Returns a resource or all resources of a given channel.
   If resource is given, only the specified resource description will be returned, otherwise, an array of
   all the resource descriptions of that channel will be returned.
@@ -521,6 +599,39 @@ class BBT:
     endpoint = "%s/%s/resources/%s" % ( __channelsEndpoint__, channel, resource )
     response = self.__deleteData__( endpoint, None, True )
     return response;
+
+
+  """
+  Adds a new channel.
+
+  @param name: the channel name.
+  @param label: optional the channel label.
+  @param description: optional the channel description.
+  @param ispublic: optional indicates if the channel is public; defaults to False.
+  @param resources: optional an array of resources in the channel.
+
+  @return True os success, raises an error on failure.
+  """
+  def addChannel(self, name, label = None, description = None, ispublic = False, resources = [] ):
+
+    if self.skey == None:
+      raise AuthenticationError("Authentication Error; Message: This method requires access key and secret key authentication!")
+
+    _label = label or name
+    _desc = description or _label
+
+    body = {
+      'name': name,
+      'label': _label,
+      'description': _desc,
+      'ispublic': ispublic,
+      'resources': resources
+    }
+
+    endpoint = "%s" % ( __channelsEndpoint__ )
+    response = self.__postData__( endpoint, json.dumps(body, separators=(',', ':')), True )
+    return response;
+
 
   """
   Returns a description of the given channel or of all the user account's channels if channel is not provided.
@@ -576,7 +687,7 @@ class BBT:
 """
 Utility class for dealing with Resources
 Contains methods for sending persistent and transient messages and for reading data.
-Mainly wrappers around Beebotte API calls. 
+Mainly wrappers around Beebotte API calls.
 """
 class Resource:
   channel   = None
@@ -587,7 +698,7 @@ class Resource:
   Constructor, initializes the Resource object.
   In Beebotte, resources follow a 2 level hierarchy: Channel -> Resource
   Data is always associated with Resources.
-  
+
   @param bbt: required reference to the Beebotte client connector.
   @param channel: required channel name.
   @param resource: required resource name.
@@ -599,12 +710,12 @@ class Resource:
 
   """
   Write (Persistent messages)
-  Writes data to this resource. 
+  Writes data to this resource.
   This call will be signed to authenticate the calling user.
-  
+
   @param data: required the value to write (persist).
   @param ts: optional timestamp in milliseconds (since epoch). If this parameter is not given, it will be automatically added with a value equal to the local system time.
-   
+
   @return: true on success, raises an error or failure.
   """
   def write(self, data, ts = None):
@@ -612,12 +723,12 @@ class Resource:
 
   """
   Publish (Transient messages)
-  Publishes data to this resource. The published data will not be persisted. It will only be delivered to connected subscribers. 
+  Publishes data to this resource. The published data will not be persisted. It will only be delivered to connected subscribers.
   This call will be signed to authenticate the calling user.
-  
+
   @param data: required the data to publish (transient).
   @param ts: optional timestamp in milliseconds (since epoch). If this parameter is not given, it will be automatically added with a value equal to the local system time.
-   
+
   @return: true on success, raises an error or failure.
   """
   def publish(self, data, ts = None):
@@ -627,15 +738,15 @@ class Resource:
   Read
   Reads data from the this resource.
   If the owner is set (value different than None) the behaviour is Public Read (no authentication).
-  If the owner is None, the behaviour is authenticated read.      
-  
+  If the owner is None, the behaviour is authenticated read.
+
   @param limit: optional number of records to return.
   @param owner: optional the owner (username) of the resource to read from for public read. None to read from the user's owned channel.
   @param source: optional indicates whether to read from database or from historical statistics. Accepts ('raw', 'hour-stats', 'day-stats').
   @param time_range: optional indicates the timerange for the returned records. Accepts ('Xhour', 'Xday', 'Xweek', 'Xmonth') with X a positive integer, or ('today', 'yesterday', 'current-ween', 'last-week', 'current-month', 'last-month', 'ytd' ).
   @param data_filter filters data records to be returned
   @param sample_rate reduces the number of records to return (number between 0 and 1)
-  
+
   @return: array of records (JSON) on success, raises an error or failure.
   """
   def read(self, limit = 750, owner = None, source = "raw", time_range = None, data_filter = None, sample_rate = None):
@@ -646,8 +757,8 @@ class Resource:
 
   """
   Read
-  Reads the last inserted record. 
-  
+  Reads the last inserted record.
+
   @return: the last inserted record on success, raises an error or failure.
   """
   def recentVal(self):
