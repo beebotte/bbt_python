@@ -1,6 +1,11 @@
 History
 =======
 
+## 0.5.0
+
+* Add Channel and Resource operations
+  [#6](https://github.com/beebotte/bbt_python/issues/6).
+
 ## 0.4.0
 
 * Add Channel Token regeneration 
