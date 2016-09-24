@@ -90,6 +90,30 @@ If you have multiple records to publish (to one or multiple resources of the sam
         {"resource": "resource2", "data": "World"}
     ])
 
+### Add Channel
+You can add a channel using:
+
+    bbt.addChannel(
+      "channel1",
+      label = "channel label",
+      description = "channel description",
+      ispublic = True,
+      resources = [{
+          "name": "res1",
+          "vtype": BBT_Types.String
+        }, {
+          "name": "res2",
+          "label": "resource 2",
+          "vtype": BBT_Types.String
+        }, {
+          "name": "res3",
+          "description": "resource 3 description",
+          "vtype": BBT_Types.Number,
+          "sendOnSubscribe": True
+        }
+      ]
+    )
+
 ### Get Channel
 You can get the JSON description of a channel using:
 
@@ -105,6 +129,18 @@ This will return an array of all your channels.
 You can delete a channel using:
 
     bbt.deleteChannel("channel1")
+
+### Add Resource
+You can add a resource to a channel using:
+
+    bbt.addResource(
+      channel = "testnamek2",
+      name = "res1",
+      vtype = BBT_Types.Number,
+      label = "resource 1",
+      description = "description of resource 1",
+      sendOnSubscribe = False
+    )
 
 ### Get Resource
 You can get the JSON description of a resource of a channel using:
@@ -155,6 +191,6 @@ The library provides a Resource Class that can be used as follows
     resource.publish("Hola amigo")
 
 ## License
-Copyright 2013 - 2015 Beebotte.
+Copyright 2013 - 2016 Beebotte.
 
 [The MIT License](http://opensource.org/licenses/MIT)
