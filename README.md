@@ -1,6 +1,8 @@
 Beebotte Python SDK
 ===================
 
+[![PyPI version](https://badge.fury.io/py/beebotte.svg)](https://badge.fury.io/py/beebotte)
+
 | what          | where                                  |
 |---------------|----------------------------------------|
 | overview      | http://beebotte.com/overview           |
